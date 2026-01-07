@@ -1,5 +1,6 @@
 "use client";
 
+import KeyboardControls from "@/components/KeyboardControls";
 import ControlArea from "@/components/layout/ControlArea";
 import ObservationArea from "@/components/layout/ObservationArea";
 import { SystemEvent } from "@/lib/events";
@@ -55,9 +56,9 @@ export default function Home() {
     });
   }
 
-  function jumpToEvent (eventId: string) {
+  function jumpToEvent(eventId: string) {
     if (mode !== "replay") return;
-    const index = events.findIndex(e => e.id===eventId);
+    const index = events.findIndex((e) => e.id === eventId);
     if (index === -1) return;
 
     setReplayIndex(index);
@@ -93,6 +94,14 @@ export default function Home() {
 
   return (
     <main className="h-screen grid grid-cols-2">
+      <KeyboardControls
+        mode={mode}
+        isPlaying={isPlaying}
+        replaySpeed={replaySpeed}
+        activeEvent={activeEvent}
+        controls={playbackControls}
+        addMarker={addMarker}
+      />
       <ControlArea
         onSend1={handleSend1}
         onSend2={handleSend2}
