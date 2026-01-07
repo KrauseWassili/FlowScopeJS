@@ -74,7 +74,7 @@ export default function ControlArea({
         <button
           onClick={() => activeEvent && addMarker(activeEvent.id)}
           disabled={!activeEvent}
-          className="w-10 h-8 border-2 bg-blue-300"
+          className="w-20 h-8 border-2 bg-blue-300"
         >
           ★ Mark
         </button>

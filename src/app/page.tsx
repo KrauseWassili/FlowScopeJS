@@ -6,6 +6,7 @@ import ObservationArea from "@/components/layout/ObservationArea";
 import { SystemEvent } from "@/lib/events";
 import { Marker } from "@/lib/Markers";
 import { PlaybackControls } from "@/lib/playback";
+import { SystemEventInput } from "@/lib/shemas/systemEvent";
 import { useEffect, useState } from "react";
 
 export default function Home() {
@@ -19,18 +20,41 @@ export default function Home() {
   const activeEvent =
     mode === "live" ? events.at(-1) ?? null : events[replayIndex] ?? null;
 
+  async function sendEvent(eventData: SystemEventInput) {
+    const res = await fetch("/api/events", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(eventData),
+    });
+
+    if (!res.ok) {
+      alert("send message error");
+      return;
+    }
+
+    setEvents((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        type: eventData.type,
+        from: eventData.from,
+        to: eventData.to,
+        payload: eventData.payload,
+        timestamp: new Date(),
+      },
+    ]);
+  }
+
   function handleSend1() {
     if (mode === "replay") return;
-    const event: SystemEvent = {
-      id: crypto.randomUUID(),
+    const event: SystemEventInput = {
       type: "MESSAGE_SENT",
       from: "User",
       to: "Messenger_Window",
       payload: { text: "Hello from FlowScope" },
-      timestamp: new Date(),
     };
 
-    setEvents((prev) => [...prev, event]);
+    sendEvent(event);
   }
 
   function handleSend2() {
@@ -63,6 +87,19 @@ export default function Home() {
 
     setReplayIndex(index);
   }
+
+  useEffect(() => {
+    async function loadEvents() {
+      const res = await fetch("/api/events");
+      const data = await res.json();
+      const withDates = data.map((e: any) => ({
+        ...e,
+        timestamp: new Date(e.timestamp),
+      }));
+      setEvents(withDates);
+    }
+    loadEvents();
+  }, []);
 
   useEffect(() => {
     if (!isPlaying || mode !== "replay") return;

@@ -8,5 +8,5 @@ export type SystemEvent = {
     payload: {
         text: string;
     };
-    timestamp: Date;
+    timestamp: Date
 }
