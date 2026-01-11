@@ -1,21 +1,57 @@
-import { getAllEvents, insertEvent } from "@/db/events";
-import { systemEventSchema } from "@/lib/shemas/systemEvent";
 import { NextResponse } from "next/server";
+import { EVENT_PIPELINES } from "@/lib/events/pipelines/eventPipelines";
+import { isEventType } from "@/lib/events/guards/isEventType";
+import Redis from "ioredis";
+import { eventSchemas } from "@/lib/events/sсhemas";
+
+const redis = new Redis({
+  host: process.env.REDIS_HOST || "localhost",
+  port: 6379,
+});
 
 export async function POST(req: Request) {
-  const body = await req.json();
-  const parsed = systemEventSchema.safeParse(body);
+  const body: unknown = await req.json();
 
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.format() }, { status: 400 });
+  if (
+    typeof body !== "object" ||
+    body === null ||
+    !("type" in body)
+  ) {
+    return NextResponse.json(
+      { error: "Invalid request body" },
+      { status: 400 }
+    );
   }
 
-  const event = await insertEvent(parsed.data);
+  const { type } = body as { type: unknown };
 
-  return NextResponse.json(event);
-}
+  if (!isEventType(type)) {
+    return NextResponse.json(
+      { error: "Unknown event type" },
+      { status: 400 }
+    );
+  }
 
-export async function GET() {
-    const events = await getAllEvents();
-    return NextResponse.json(events);
+  const schema = eventSchemas[type];
+  const pipeline = EVENT_PIPELINES[type];
+
+  const parsed = schema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(parsed.error.format(), { status: 400 });
+  }
+
+  const traceId = crypto.randomUUID();
+
+  await redis.publish(
+    "system-events",
+    JSON.stringify({
+      traceId,
+      type,
+      stage: "api:received",
+      timestamp: Date.now(),
+      payload: parsed.data,
+    })
+  );
+
+  return NextResponse.json({ traceId });
 }

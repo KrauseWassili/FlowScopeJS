@@ -1,16 +1,14 @@
-import { PlaybackControls } from "@/lib/playback";
-import MessengerPanel from "./MessengerPanel";
-import PlaybackPanel from "./PlaybackPanel";
-import AuthPanel from "./AuthPanel";
-import { useEffect, useRef, useState } from "react";
-import { io, Socket } from "socket.io-client";
+"use client";
 
-type ClientAreaProps = {
-  controls: PlaybackControls;
-  mode: "live" | "replay";
-  replayIndex: number;
-  isPlaying: boolean;
-};
+import { useEffect, useState } from "react";
+import { useAuth } from "@/context/AuthContext";
+import { useSocket } from "@/context/SocketContext";
+import MessengerPanel from "./MessengerPanel";
+import AuthPanel from "./AuthPanel";
+import UserStatus from "./UserStatus";
+import { Profile } from "@/lib/profile";
+import ContactSelect from "./ContactSelect";
+import { emitEvent } from "@/lib/events/emitEvent";
 
 type Message = {
   id: string;
@@ -29,80 +27,121 @@ function parseRedisMsg(raw: any[]): Message {
   return {
     id,
     ...obj,
-    timestamp: obj.timestamp ? new Date(obj.timestamp) : undefined,
+    timestamp: obj.timestamp ? new Date(obj.timestamp) : new Date(),
   };
 }
 
-export default function ClientArea({
-  controls,
-  mode,
-  replayIndex,
-  isPlaying,
-}: ClientAreaProps) {
-  const [tab, setTab] = useState<"messenger" | "playback" | "auth">("auth");
+export default function ClientArea() {
+  const { user, loading } = useAuth();
+  const { socket } = useSocket();
+
+  const [users, setUsers] = useState<Profile[]>([]);
+  const [peerId, setPeerId] = useState<string | undefined>();
+  const [tab, setTab] = useState<"messenger" | "auth">("messenger");
   const [messages, setMessages] = useState<Message[]>([]);
-  const socketRef = useRef<Socket | null>(null);
-  async function handleSendMessage(from: string, to: string, text: string) {
-    if (socketRef.current) {
-      socketRef.current.emit("send_message", { from, to, text });
-    }
-  }
+
+  /* =========================
+     Socket listeners
+  ========================= */
 
   useEffect(() => {
-    const socket = io("http://localhost:4000");
-    socketRef.current = socket;
-
-    socket.on("new_message", (raw) => {
-      setMessages((prev) => [...prev, parseRedisMsg(raw)]);
-    });
-
-    socket.on("message_history", (msgs) => {
-      setMessages(msgs.map(parseRedisMsg));
-    });
+    if (!socket) return;
 
     socket.emit("get_history");
 
-    return () => {
-      socket.disconnect();
+    const onNewMessage = (msg: any) => {
+      setMessages((prev) => [
+        ...prev,
+        { ...msg, timestamp: new Date(msg.timestamp) },
+      ]);
     };
-  }, []);
+
+    const onHistory = (rawMsgs: any[]) => {
+      setMessages(rawMsgs.map(parseRedisMsg));
+    };
+
+    socket.on("message:new", onNewMessage);
+    socket.on("message_history", onHistory);
+
+    return () => {
+      socket.off("message:new", onNewMessage);
+      socket.off("message_history", onHistory);
+    };
+  }, [socket]);
+
+  /* =========================
+     Load contacts
+  ========================= */
+
+  useEffect(() => {
+    if (!user) return;
+
+    fetch(`/api/peers?selfId=${user.id}`)
+      .then((res) => res.json())
+      .then(setUsers)
+      .catch(console.error);
+  }, [user]);
+
+  /* =========================
+     Send message
+  ========================= */
+
+  const handleSendMessage = (to: string, text: string) => {
+    if (!socket || !user) return;
+
+    emitEvent({
+      type: "MESSAGE_EXCHANGE",
+      from: user.id,
+      to,
+      payload: { text },
+    });
+
+    // 🔹 Real message
+    socket.emit("message:send", { to, text });
+  };
+
+  if (loading) {
+    return <div className="p-4">Loading...</div>;
+  }
+
+  const selfId = user?.id;
+
+  const visibleMessages = messages.filter(
+    (m) =>
+      (m.from === selfId && m.to === peerId) ||
+      (m.from === peerId && m.to === selfId)
+  );
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex gap-2 border-b p-2">
+    <div className="flex-1 flex flex-col border-b min-h-0">
+      <div className="flex gap-2 border-b p-2 flex-shrink-0">
         <button onClick={() => setTab("messenger")}>Messenger</button>
-        <button onClick={() => setTab("playback")}>Playback</button>
         <button onClick={() => setTab("auth")}>Login / Registration</button>
+
+        {user && (
+          <ContactSelect users={users} value={peerId} onChange={setPeerId} />
+        )}
+
+        <UserStatus />
       </div>
-      <div className="h-full min-h-0">
-        {tab === "messenger" && (
-          <div className="flex flex-col h-full min-h-0">
-            <div className="h-1/2 min-h-0 border-b">
-              <MessengerPanel
-                selfId="user-1"
-                peerId="user-2"
-                messages={messages}
-                onSend={(text) => handleSendMessage("user-1", "user-2", text)}
-              />
+
+      <div className="flex-1 min-h-0 flex flex-col">
+        {tab === "messenger" &&
+          (selfId && peerId ? (
+            <MessengerPanel
+              selfId={selfId}
+              peerId={peerId}
+              messages={visibleMessages}
+              onSend={(text) => handleSendMessage(peerId, text)}
+            />
+          ) : (
+            <div className="flex flex-1 items-center justify-center text-xs opacity-60">
+              {selfId
+                ? "Select a contact to start chatting"
+                : "Please log in to use messenger"}
             </div>
-            <div className="h-1/2 min-h-0">
-              <MessengerPanel
-                selfId="user-2"
-                peerId="user-1"
-                messages={messages}
-                onSend={(text) => handleSendMessage("user-2", "user-1", text)}
-              />
-            </div>
-          </div>
-        )}
-        {tab === "playback" && (
-          <PlaybackPanel
-            controls={controls}
-            mode={mode}
-            replayIndex={replayIndex}
-            isPlaying={isPlaying}
-          />
-        )}
+          ))}
+
         {tab === "auth" && <AuthPanel />}
       </div>
     </div>

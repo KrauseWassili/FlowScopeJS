@@ -1,5 +1,3 @@
-import { SystemEvent } from "@/lib/events";
-
 type EventFlowProps = {
   active: boolean;
   direction: "forward" | "backward";

@@ -18,9 +18,7 @@ export default function PlaybackPanel({ controls, mode, replayIndex, isPlaying }
     <div>
       <h2>Playback panel</h2>
 
-      <p>Current mode: {mode}</p>
-      <p>Replay index: {replayIndex}</p>
-      <p>Status: {isPlaying ? "Playing" : "Paused"}</p>
+      <p>Current mode: {mode} Replay index: {replayIndex} Status: {isPlaying ? "Playing" : "Paused"}</p>
 
       <p className="text-xs text-gray-500 p-2">
         ␣ Play/Pause · ← → Step · ↑ ↓ Speed · M Mark

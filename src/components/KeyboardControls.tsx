@@ -1,4 +1,4 @@
-import { SystemEvent } from "@/lib/events";
+import { ObservedEvent } from "@/lib/events/observed/observedEvent.types";
 import { PlaybackControls } from "@/lib/playback";
 import { useEffect } from "react";
 
@@ -6,7 +6,7 @@ type KeyboardControlsProps = {
   mode: "live" | "replay";
   isPlaying: boolean;
   replaySpeed: number;
-  activeEvent: SystemEvent | null;
+  activeEvent: ObservedEvent | null;
   controls: PlaybackControls;
   addMarker: (eventId: string) => void;
 };
@@ -54,7 +54,7 @@ export default function KeyboardControls({
         case "m":
         case "M":
           if (activeEvent) {
-            addMarker(activeEvent.id);
+            addMarker(activeEvent.traceId);
           }
           break;
       }

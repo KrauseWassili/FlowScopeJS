@@ -1,57 +1,42 @@
-import { SystemEvent } from "@/lib/events";
-import { useState, useMemo } from "react";
-
-export type EventStage =
-  | "client:emit"
-  | "api:received"
-  | "redis:published"
-  | "db:stored"
-  | "client:received";
-
-export type ObservedEvent = SystemEvent & {
-  stages: Partial<Record<EventStage, string>>;
-};
+import { useEffect, useMemo, useState } from "react";
+import { useSocket } from "@/context/SocketContext";
+import { SystemEvent } from "@/lib/events/system/systemEvent.type";
+import { ObservedEvent } from "@/lib/events/observed/observedEvent.types";
 
 export function useObservedEvents() {
-  const [observedById, setObservedById] = useState<Record<string, ObservedEvent>>({});
+  const { socket } = useSocket();
+  const [systemEvents, setSystemEvents] = useState<SystemEvent[]>([]);
 
-  function upsertDbEvents(dbEvents: SystemEvent[]) {
-    setObservedById(prev => {
-      const next = { ...prev };
-      for (const e of dbEvents) {
-        const old = next[e.id];
-        next[e.id] = {
-          ...e,
-          stages: {
-            ...(old?.stages ?? {}),
-            "db:stored": typeof e.timestamp === "string"
-            ? e.timestamp
-            : e.timestamp.toISOString(),
-          },
-        };
+  useEffect(() => {
+    if (!socket) return;
+
+    const handler = (event: SystemEvent) => {
+      console.log("[UI] system:event", event);
+      setSystemEvents((prev) => [...prev, event]);
+    };
+
+    socket.on("system:event", handler);
+    return () => {
+      socket.off("system:event", handler);
+    };
+  }, [socket]);
+
+  const observedList = useMemo(() => {
+    const map = new Map<string, ObservedEvent>();
+
+    for (const e of systemEvents) {
+      if (!map.has(e.traceId)) {
+        map.set(e.traceId, {
+          traceId: e.traceId,
+          type: e.type,
+          stages: {},
+        });
       }
-      return next;
-    });
-  }
+      map.get(e.traceId)!.stages[e.stage] = e.timestamp;
+    }
 
-  function markStage(eventId: string, stage: EventStage, at = new Date().toISOString()) {
-    setObservedById(prev => {
-      const ev = prev[eventId];
-      if (!ev) return prev;
-      return {
-        ...prev,
-        [eventId]: {
-          ...ev,
-          stages: { ...ev.stages, [stage]: at },
-        },
-      };
-    });
-  }
+    return Array.from(map.values());
+  }, [systemEvents]);
 
-  const observedList = useMemo(
-    () => Object.values(observedById).sort((a, b) => (a.timestamp < b.timestamp ? -1 : 1)),
-    [observedById]
-  );
-
-  return { observedList, upsertDbEvents, markStage };
+  return { observedList };
 }

@@ -2,9 +2,11 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
-RUN npm install --production
+COPY package.json package-lock.json* ./
+RUN npm install
 
 COPY . .
 
-CMD ["node", "src/server/ws-server.js"]
+EXPOSE 4000
+
+CMD ["npm", "start"]

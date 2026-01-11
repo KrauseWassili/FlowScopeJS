@@ -1,4 +1,5 @@
-import { SystemEvent } from "@/lib/events";
+
+import { SystemEvent } from "@/lib/events/system/systemEvent.type";
 import { useEffect, useState } from "react";
 
 export function useEventsApi() {

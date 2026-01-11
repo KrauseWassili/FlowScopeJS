@@ -28,16 +28,12 @@ export default function MessengerPanel({
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
-  const filteredMessages = messages.filter(
-    (m) =>
-      (m.from === selfId && m.to === peerId) ||
-      (m.from === peerId && m.to === selfId)
-  );
+  
 
   return (
     <div className="flex flex-col w-full h-full min-h-0 shadow-lg p-4">
       <div className="flex-1 flex flex-col-reverse overflow-y-auto space-y-2 pb-2">
-        {[...filteredMessages].reverse().map((msg) => {
+        {[...messages].reverse().map((msg) => {
 
           const isSelf = msg.from === selfId;
           return (

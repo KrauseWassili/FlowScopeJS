@@ -3,11 +3,9 @@
 import KeyboardControls from "@/components/KeyboardControls";
 import ClientArea from "@/components/client/ClientArea";
 import ObservationArea from "@/components/observation/ObservationArea";
-import { useEventsApi } from "@/hooks/useEventsApi";
 import { useObservedEvents } from "@/hooks/useObservedEvents";
-import { Marker } from "@/lib/Markers";
+import { Marker } from "@/lib/markers";
 import { PlaybackControls } from "@/lib/playback";
-import { SystemEventInput } from "@/lib/shemas/systemEvent";
 import { useEffect, useState } from "react";
 
 export default function Home() {
@@ -16,58 +14,31 @@ export default function Home() {
   const [replaySpeed, setReplaySpeed] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [markers, setMarkers] = useState<Marker[]>([]);
-  const { observedList, upsertDbEvents, markStage } = useObservedEvents();
-  const { data: events, refetch } = useEventsApi();
+
+  const { observedList } = useObservedEvents();
+
   const activeEvent =
     mode === "live"
       ? observedList.at(-1) ?? null
       : observedList[replayIndex] ?? null;
 
-  async function sendEvent(eventData: SystemEventInput) {
-    const res = await fetch("/api/events", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(eventData),
-    });
-
-    if (!res.ok) {
-      alert("send message error");
-      throw new Error("Send event failed");
-    }
-
-    const event = await res.json();
-    const withDate = {
-      ...event,
-      timestamp: new Date(event.timestamp),
-    };
-
-    upsertDbEvents([withDate]);
-
-    return withDate;
-  }
-
-  function addMarker(eventId: string) {
+  function addMarker(traceId: string) {
     setMarkers((prev) => {
-      if (prev.some((m) => m.eventId === eventId)) {
-        return prev;
-      }
-      return [...prev, { eventId, createdAt: new Date() }];
+      if (prev.some((m) => m.eventId === traceId)) return prev;
+      return [...prev, { eventId: traceId, createdAt: new Date() }];
     });
   }
 
-  function jumpToEvent(eventId: string) {
+  function jumpToEvent(traceId: string) {
     if (mode !== "replay") return;
-    const index = observedList.findIndex((e) => e.id === eventId);
-    if (index === -1) return;
-
-    setReplayIndex(index);
+    const index = observedList.findIndex((e) => e.traceId === traceId);
+    if (index !== -1) setReplayIndex(index);
   }
 
   useEffect(() => {
     if (!isPlaying || mode !== "replay") return;
-    const baseInterval = 600;
-    const intervalMs = baseInterval / replaySpeed;
-    const timer = setInterval(() => {
+
+    const interval = setInterval(() => {
       setReplayIndex((prev) => {
         if (prev >= observedList.length - 1) {
           setIsPlaying(false);
@@ -75,39 +46,34 @@ export default function Home() {
         }
         return prev + 1;
       });
-    }, intervalMs);
-    return () => clearInterval(timer);
-  }, [isPlaying, mode, observedList.length]);
+    }, 600 / replaySpeed);
 
-  useEffect(() => {
-    if (events) upsertDbEvents(events);
-  }, [events]);
+    return () => clearInterval(interval);
+  }, [isPlaying, mode, replaySpeed, observedList.length]);
 
   const playbackControls: PlaybackControls = {
     mode: () => {
       setIsPlaying(false);
-      return mode === "live" ? setMode("replay") : setMode("live");
+      setMode((m) => (m === "live" ? "replay" : "live"));
     },
     play: () => setIsPlaying(true),
     pause: () => setIsPlaying(false),
     next: () =>
-      setReplayIndex((prev) => Math.min(prev + 1, observedList.length - 1)),
-    prev: () => setReplayIndex((prev) => Math.max(prev - 1, 0)),
+      setReplayIndex((p) => Math.min(p + 1, observedList.length - 1)),
+    prev: () => setReplayIndex((p) => Math.max(p - 1, 0)),
     setSpeed: setReplaySpeed,
   };
 
   return (
     <main className="h-screen grid grid-cols-2">
-      <div className="h-full min-h-0 flex flex-col border-r">
-        <ClientArea
-          controls={playbackControls}
-          mode={mode}
-          replayIndex={replayIndex}
-          isPlaying={isPlaying}
-        />
+      <div className="h-full flex flex-col border-r">
+        <ClientArea />
       </div>
-      <div className="h-full min-h-0 flex flex-col">
+
+      <div className="h-full flex flex-col">
         <ObservationArea
+          replayIndex={replayIndex}
+          controls={playbackControls}
           events={observedList}
           mode={mode}
           isPlaying={isPlaying}
