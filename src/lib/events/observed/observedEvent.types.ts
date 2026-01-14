@@ -1,9 +1,12 @@
+// import { EventNode } from "../nodes/systemNodes";
 
-import { EventType } from "../sсhemas";
-import { EventStage } from "../stages/eventStages";
+// export type ObservedNodeInfo = {
+//   timestamp: number;
+//   outcome?: "success" | "error";
+// };
 
-export type ObservedEvent = {
-  traceId: string;
-  type: EventType; 
-  stages: Partial<Record<EventStage, number>>;
-};
+// export type ObservedEvent = {
+//   traceId: string;
+//   type: string;
+//   node: Partial<Record<EventNode, ObservedNodeInfo>>;
+// };

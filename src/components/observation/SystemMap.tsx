@@ -1,57 +1,70 @@
-import { useEffect, useState } from "react";
-import EventFlow from "./EventFlow";
-import { ObservedEvent } from "@/lib/events/observed/observedEvent.types";
-import { EventStage } from "@/lib/events/stages/eventStages";
-import { NODE_LABEL, STAGE_TO_NODE } from "@/lib/events/systemMap/systemMapConfig";
-import { SystemNode } from "@/lib/events/systemMap/systemNodes";
+import { SYSTEM_NODES, EventNode } from "@/lib/events/nodes/systemNodes";
+import { SystemEvent } from "./SystemEvent";
+import { TraceEvent } from "@/lib/trace/sсhemas";
 
-type SystemMapProps = {
-  activeEvent: ObservedEvent | null;
+type Props = {
+  mode: "live" | "replay";
+  events: TraceEvent[];
+  activeNode?: string | null;
+  onNodeClick: (params: { traceId: string; node: string }) => void;
 };
 
-export default function SystemMap({ activeEvent }: SystemMapProps) {
-  const [activeNodes, setActiveNodes] = useState<SystemNode[]>([]);
-
-  useEffect(() => {
-    if (!activeEvent) return;
-
-    const nodes: SystemNode[] = [];
-
-    for (const stage in activeEvent.stages) {
-      const node = STAGE_TO_NODE[stage as EventStage];
-      if (node) {
-        nodes.push(node);
-      }
-    }
-
-    setActiveNodes(nodes);
-
-    const timer = setTimeout(() => setActiveNodes([]), 400);
-    return () => clearTimeout(timer);
-  }, [activeEvent]);
-
-  if (!activeEvent) return null;
-
-  const direction =
-    activeEvent.stages["client:emit"] && !activeEvent.stages["client:received"]
-      ? "forward"
-      : "forward";
+export function SystemMap({ mode, events, activeNode, onNodeClick }: Props) {
+  const lastEventByNode = new Map<EventNode, TraceEvent>();
+  for (const event of events) {
+    if (!event.node) continue;
+    lastEventByNode.set(event.node as EventNode, event);
+  }
 
   return (
-    <>
-      <div className={activeNodes.includes("client") ? "bg-amber-300" : ""}>
-        [{NODE_LABEL.client}]
+    <div className="relative w-full py-8">
+      {/* НОДЫ */}
+      <div className="flex justify-between px-6">
+        {SYSTEM_NODES.map((node) => {
+          const participated =
+            mode === "live" ? lastEventByNode.has(node) : activeNode === node;
+
+          const outcome =
+            mode === "live"
+              ? lastEventByNode.get(node)?.outcome ?? null
+              : activeNode === node
+              ? events.find((e) => e.node === node)?.outcome ?? null
+              : null;
+
+          return (
+            <div key={node} className="flex flex-col items-center">
+              <SystemEvent
+                node={node}
+                participated={participated}
+                outcome={outcome}
+                onClick={() => {
+                  const lastEvent = lastEventByNode.get(node);
+                  if (lastEvent) {
+                    onNodeClick({
+                      traceId: lastEvent.traceId,
+                      node,
+                    });
+                  }
+                }}
+              />
+              <div
+                className={[
+                  "w-1 h-6 mt-2 transition-colors",
+                  participated
+                    ? outcome === "error"
+                      ? "bg-timeline-error"
+                      : "bg-timeline-success"
+                    : "bg-gray-300 opacity-30",
+                ].join(" ")}
+              />
+            </div>
+          );
+        })}
       </div>
 
-      <EventFlow active={activeNodes.length > 0} direction={direction} />
-
-      <div className={activeNodes.includes("api") ? "bg-amber-300" : ""}>
-        [{NODE_LABEL.api}]
+      <div className="relative mt-0">
+        <div className="h-1 rounded mx-4 bg-gray-300" />
       </div>
-
-      <div className={activeNodes.includes("redis") ? "bg-amber-300" : ""}>
-        [{NODE_LABEL.redis}]
-      </div>
-    </>
+    </div>
   );
 }

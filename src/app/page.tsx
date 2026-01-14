@@ -1,26 +1,33 @@
 "use client";
 
-import KeyboardControls from "@/components/KeyboardControls";
-import ClientArea from "@/components/client/ClientArea";
-import ObservationArea from "@/components/observation/ObservationArea";
-import { useObservedEvents } from "@/hooks/useObservedEvents";
-import { Marker } from "@/lib/markers";
-import { PlaybackControls } from "@/lib/playback";
 import { useEffect, useState } from "react";
 
+import KeyboardControls from "@/components/keyboard/KeyboardControls";
+import ClientArea from "@/components/client/ClientArea";
+import ObservationArea from "@/components/observation/ObservationArea";
+
+import { PlaybackControls } from "@/lib/playback/playback.types";
+
+import { useObservedEvents } from "@/lib/events/observed/useObservedEvents";
+import { useAuth } from "@/context/AuthContext";
+import { TraceEvent } from "@/server/lib/trace/sсhemas";
+import { Marker } from "@/lib/trace/markers/Markers";
+
 export default function Home() {
+  const { accessToken, loading } = useAuth();
+
   const [mode, setMode] = useState<"live" | "replay">("live");
   const [replayIndex, setReplayIndex] = useState(0);
   const [replaySpeed, setReplaySpeed] = useState(1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [markers, setMarkers] = useState<Marker[]>([]);
 
-  const { observedList } = useObservedEvents();
+  const observedEvents = useObservedEvents(accessToken);
 
-  const activeEvent =
+  const activeEvent: TraceEvent | null =
     mode === "live"
-      ? observedList.at(-1) ?? null
-      : observedList[replayIndex] ?? null;
+      ? observedEvents.at(-1) ?? null
+      : observedEvents[replayIndex] ?? null;
 
   function addMarker(traceId: string) {
     setMarkers((prev) => {
@@ -31,7 +38,7 @@ export default function Home() {
 
   function jumpToEvent(traceId: string) {
     if (mode !== "replay") return;
-    const index = observedList.findIndex((e) => e.traceId === traceId);
+    const index = observedEvents.findIndex((e) => e.traceId === traceId);
     if (index !== -1) setReplayIndex(index);
   }
 
@@ -40,7 +47,7 @@ export default function Home() {
 
     const interval = setInterval(() => {
       setReplayIndex((prev) => {
-        if (prev >= observedList.length - 1) {
+        if (prev >= observedEvents.length - 1) {
           setIsPlaying(false);
           return prev;
         }
@@ -49,7 +56,7 @@ export default function Home() {
     }, 600 / replaySpeed);
 
     return () => clearInterval(interval);
-  }, [isPlaying, mode, replaySpeed, observedList.length]);
+  }, [isPlaying, mode, replaySpeed, observedEvents.length]);
 
   const playbackControls: PlaybackControls = {
     mode: () => {
@@ -59,10 +66,18 @@ export default function Home() {
     play: () => setIsPlaying(true),
     pause: () => setIsPlaying(false),
     next: () =>
-      setReplayIndex((p) => Math.min(p + 1, observedList.length - 1)),
+      setReplayIndex((p) => Math.min(p + 1, observedEvents.length - 1)),
     prev: () => setReplayIndex((p) => Math.max(p - 1, 0)),
     setSpeed: setReplaySpeed,
   };
+
+  if (loading) {
+    return (
+      <div className="h-screen flex items-center justify-center text-gray-400">
+        Loading…
+      </div>
+    );
+  }
 
   return (
     <main className="h-screen grid grid-cols-2">
@@ -72,12 +87,7 @@ export default function Home() {
 
       <div className="h-full flex flex-col">
         <ObservationArea
-          replayIndex={replayIndex}
-          controls={playbackControls}
-          events={observedList}
-          mode={mode}
-          isPlaying={isPlaying}
-          activeEvent={activeEvent}
+          events={observedEvents}
           markers={markers}
           onJumpToEvent={jumpToEvent}
         />

@@ -18,36 +18,35 @@ export function SocketProvider({ children }: { children: React.ReactNode }) {
     if (loading) return;
 
     if (!session?.access_token) {
-      if (socket) {
-        socket.disconnect();
-        setSocket(null);
-      }
+      setSocket((prev) => {
+        prev?.disconnect();
+        return null;
+      });
       return;
     }
 
-    if (socket) return;
-
     const s = io(process.env.NEXT_PUBLIC_SOCKET_URL!, {
       transports: ["websocket"],
-      auth: {
-        token: session.access_token,
-      },
+      auth: { token: session.access_token },
     });
+
+    console.log("🔌 creating socket");
 
     s.on("connect", () => {
       console.log("✅ Socket connected:", s.id);
     });
 
-    s.on("disconnect", () => {
-      console.log("⚠️ Socket disconnected");
-    });
-
-    s.on("connect_error", (err) => {
-      console.error("❌ Socket connect_error:", err.message);
+    s.on("disconnect", (reason) => {
+      console.log("⚠️ Socket disconnected:", reason);
     });
 
     setSocket(s);
-  }, [loading, session?.access_token]); 
+
+    return () => {
+      console.log("🧹 destroying socket");
+      s.disconnect();
+    };
+  }, [loading, session?.access_token]);
 
   return (
     <SocketContext.Provider value={{ socket }}>

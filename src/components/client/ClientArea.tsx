@@ -6,10 +6,9 @@ import { useSocket } from "@/context/SocketContext";
 import MessengerPanel from "./MessengerPanel";
 import AuthPanel from "./AuthPanel";
 import UserStatus from "./UserStatus";
-import { Profile } from "@/lib/profile";
+import { Profile } from "@/lib/auth/profile";
 import ContactSelect from "./ContactSelect";
-import { emitEvent } from "@/lib/events/emitEvent";
-import { emitSystemEvent } from "@/lib/events/system/emitSystemEvent";
+import { sendTraceEvent } from "@/lib/trace/sendTraceEvent";
 
 type Message = {
   id: string;
@@ -48,7 +47,15 @@ export default function ClientArea() {
   useEffect(() => {
     if (!socket) return;
 
-    socket.emit("get_history");
+    const onConnect = () => {
+      socket.emit("get_history");
+    };
+
+    if (socket.connected) {
+      onConnect();
+    } else {
+      socket.once("connect", onConnect);
+    }
 
     const onNewMessage = (msg: any) => {
       setMessages((prev) => [
@@ -87,26 +94,37 @@ export default function ClientArea() {
      Send message
   ========================= */
 
+  const TRACE_ID = "demo_trace";
+
   const handleSendMessage = (to: string, text: string) => {
     if (!socket || !user) return;
+
     const traceId = crypto.randomUUID();
+    const type = "MESSAGE_EXCHANGE";
 
-    emitSystemEvent({
-      traceId,
-      type: "MESSAGE_EXCHANGE",
-      stage: "client:emit",
+    sendTraceEvent({
+      traceId: traceId,
+      type: type,
+      node: "client_emit",
+      actorId: user.id,
+      dialogId: `${user.id}:${to}`,
+      event: `Send message to ${to}`,
+      payload: {
+        text,
+      },
+      outcome: "success",
+      // outcome: "error",
+      timestamp: Date.now(),
     });
 
-    emitEvent({
-      traceId,
-      type: "MESSAGE_EXCHANGE",
-      from: user.id,
+    socket.emit("message:send", {
       to,
-      payload: { text },
+      text,
+      trace: {
+        traceId: traceId,
+        type: type,
+      },
     });
-
-    // 🔹 Real message
-    socket.emit("message:send", { to, text });
   };
 
   if (loading) {

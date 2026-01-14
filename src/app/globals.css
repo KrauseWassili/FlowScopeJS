@@ -31,29 +31,24 @@ html, body {
   padding: 0;
 }
 
-
-@keyframes flow-right {
-  from {
-    transform: translateX(0%);
-  }
-  to {
-    transform: translateX(100%);
-  }
+.bg-success {
+  @apply bg-emerald-500;
+}
+.bg-error {
+  @apply bg-red-500;
+}
+.bg-inactive {
+  @apply bg-gray-300 opacity-30;
 }
 
-@keyframes flow-left {
-  from {
-    transform: translateX(0%);
-  }
-  to {
-    transform: translateX(-100%);
-  }
+.text-success {
+  @apply text-emerald-500;
 }
 
-.animate-flow-right {
-  animation: flow-right 400ms linear forwards;
+.text-error {
+  @apply text-red-500;
 }
 
-.animate-flow-left {
-  animation: flow-left 400ms linear forwards;
+.text-inactive {
+  @apply text-gray-300 opacity-30;
 }

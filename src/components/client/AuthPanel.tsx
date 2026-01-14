@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/auth/supabaseClient";
 
 export default function AuthPanel() {
   const [mode, setMode] = useState<"login" | "register">("login");
@@ -15,7 +15,6 @@ export default function AuthPanel() {
     setError(null);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
-      // options: { redirectTo: `${location.origin}/` }, // обычно не нужно
     });
     if (error) setError(error.message);
     setBusy(false);

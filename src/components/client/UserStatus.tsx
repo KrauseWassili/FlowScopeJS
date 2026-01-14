@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/context/AuthContext";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase } from "@/lib/auth/supabaseClient";
 
 function getInitials(email?: string, name?: string) {
   if (name) {
@@ -25,9 +25,7 @@ export default function UserStatus() {
   if (!user) return <div className="text-xs opacity-60">Not logged in</div>;
 
   const avatarUrl =
-    user.user_metadata?.avatar_url ||
-    user.user_metadata?.picture ||
-    null;
+    user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
 
   const name = user.user_metadata?.full_name;
   const initials = getInitials(user.email, name);
@@ -48,16 +46,9 @@ export default function UserStatus() {
         </div>
       )}
 
-      {/* Email or name */}
-      <span className="opacity-70">
-        {name ?? user.email}
-      </span>
+      <span className="opacity-70">{name ?? user.email}</span>
 
-      {/* Logout */}
-      <button
-        className="underline"
-        onClick={() => supabase.auth.signOut()}
-      >
+      <button className="underline" onClick={() => supabase.auth.signOut()}>
         Logout
       </button>
     </div>

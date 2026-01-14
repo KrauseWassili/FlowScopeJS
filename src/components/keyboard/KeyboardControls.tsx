@@ -1,12 +1,12 @@
-import { ObservedEvent } from "@/lib/events/observed/observedEvent.types";
-import { PlaybackControls } from "@/lib/playback";
+import { PlaybackControls } from "@/lib/playback/playback.types";
+import { TraceEvent } from "@/server/lib/trace/sсhemas";
 import { useEffect } from "react";
 
 type KeyboardControlsProps = {
   mode: "live" | "replay";
   isPlaying: boolean;
   replaySpeed: number;
-  activeEvent: ObservedEvent | null;
+  activeEvent: TraceEvent | null;
   controls: PlaybackControls;
   addMarker: (eventId: string) => void;
 };
