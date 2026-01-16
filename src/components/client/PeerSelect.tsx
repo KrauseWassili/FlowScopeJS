@@ -8,19 +8,19 @@ type ContactSelectProps = {
   onChange: (userId: string) => void;
 };
 
-export default function ContactSelect({
+export default function PeerSelect({
   users,
   value,
   onChange,
 }: ContactSelectProps) {
   return (
     <select
-      className="border px-2 py-1 text-xs rounded"
+      className="btn w-40! bg-inactive!"
       value={value ?? ""}
       onChange={(e) => onChange(e.target.value)}
     >
       <option value="" disabled>
-        Select user
+        Select peer
       </option>
 
       {users.map((u) => (

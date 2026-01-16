@@ -22,10 +22,8 @@ export function SystemEvent({ node, participated, outcome, onClick }: Props) {
   }
 
   return (
-    <div className="flex flex-col items-center min-w-[72px]">
-      <span className="text-[10px] text-gray-400 mb-1">
-        {node.toUpperCase()}
-      </span>
+    <div className="flex flex-col items-center min-w-18">
+      <span className="text-[10px] text-title mb-1">{node.toUpperCase()}</span>
 
       <div
         onClick={onClick}
@@ -36,6 +34,9 @@ export function SystemEvent({ node, participated, outcome, onClick }: Props) {
         title={onClick ? "Click to inspect event" : undefined}
       >
         <Icon
+          style={{
+            filter: "drop-shadow(-1px 1px 1px rgba(0,0,0,0.55))",
+          }}
           className={cn(
             "w-12 h-12",
             colorClass,
@@ -45,7 +46,7 @@ export function SystemEvent({ node, participated, outcome, onClick }: Props) {
         />
       </div>
 
-      <span className="text-[10px] text-gray-500 min-h-[16px] mt-1">
+      <span className="text-[10px] text-value min-h-4 mt-1">
         {!participated ? "–" : outcome ?? "ok"}
       </span>
     </div>

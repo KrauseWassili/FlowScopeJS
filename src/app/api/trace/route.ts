@@ -10,32 +10,6 @@ const redis = new Redis({
 
 const STREAM = "system-events";
 
-type Meta = {
-  actorId?: string;
-  dialogId?: string;
-};
-
-function extractMeta(data: unknown): Meta {
-  const meta: Meta = {};
-
-  if (typeof data === "object" && data !== null) {
-    if ("actorId" in data && typeof (data as any).actorId === "string") {
-      meta.actorId = (data as any).actorId;
-    }
-    if ("dialogId" in data && typeof (data as any).dialogId === "string") {
-      meta.dialogId = (data as any).dialogId;
-    }
-    if ("from" in data && typeof (data as any).from === "string") {
-      meta.actorId = (data as any).from;
-    }
-    if ("userId" in data && typeof (data as any).userId === "string") {
-      meta.actorId = (data as any).userId;
-    }
-  }
-
-  return meta;
-}
-
 export async function POST(req: Request) {
   const body: unknown = await req.json();
 
@@ -55,8 +29,6 @@ export async function POST(req: Request) {
   }
 
   const { traceId, type, node } = parsed.data;
-  const meta = extractMeta(parsed.data);
-  const timestamp = Date.now();
 
   console.log("TRACE INGEST:", traceId, type);
 

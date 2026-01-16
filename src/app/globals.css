@@ -1,54 +1,73 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-background: #f3f4f5;
+  --color-foreground: #2e2e2e;
+  --color-accent: #ffffff;
+
+  --color-header: #2597f5;
+  --color-panel: #bad7f0;
+  --color-success: #10b981;
+  --color-error: #ef4444;
+  --color-active: #5895f1;
+  --color-inactive: #f1f1f1;
+  --color-inactive-opacity: 0.3;
+  --color-title: #777a7e;
+  --color-value: #252525;
+  --color-border: #808080;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-background: var(--color-background);
+  --color-foreground: var(--color-foreground);
+  --color-accent: var(--color-accent);
+
+  --color-header: var(--color-header);
+  --color-panel: var(--color-panel);
+  --color-success: var(--color-success);
+  --color-error: var(--color-error);
+  --color-inactive: var(--color-inactive);
+  --color-inactive-opacity: var(--color-inactive-opacity);
+  --color-active: var(--color-active);
+  --color-title: var(--color-title);
+  --color-value: var(--color-value);
+  --color-border: var(--color-border);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+.btn {
+  @apply w-24 h-10 p-2 shrink-0 border border-active rounded-md text-sm font-bold shadow transition
+    bg-inactive text-foreground hover:bg-accent active:scale-95;
+  box-shadow: -1px 1px 1px 0 rgba(0, 0, 0, 0.35);
+  text-shadow: -1px 1px 1px rgba(0, 0, 0, 0.05);
 }
+
+
+
+.link-btn {
+  @apply bg-transparent text-inactive hover:text-accent text-2xl hover:scale-110 transition-colors;
+  text-shadow: -1px 1px 1px rgba(0, 0, 0, 0.35);
+}
+
+.input {
+  @apply flex-1 h-10 p-2 shrink-0 border border-active rounded-md text-sm shadow transition
+    bg-accent text-foreground active:scale-95;
+  box-shadow: -1px 1px 1px 0 rgba(0, 0, 0, 0.35);
+}
+
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--color-background);
+  color: var(--color-foreground);
   font-family: Arial, Helvetica, sans-serif;
-}
-
-html, body {
-  height: 100%;
   margin: 0;
   padding: 0;
+  min-height: 100vh;
 }
 
-.bg-success {
-  @apply bg-emerald-500;
-}
-.bg-error {
-  @apply bg-red-500;
-}
-.bg-inactive {
-  @apply bg-gray-300 opacity-30;
-}
-
-.text-success {
-  @apply text-emerald-500;
-}
-
-.text-error {
-  @apply text-red-500;
-}
-
-.text-inactive {
-  @apply text-gray-300 opacity-30;
+html,
+body {
+  height: 100%;
 }

@@ -31,9 +31,10 @@ export default function MessengerPanel({
   
 
   return (
-    <div className="flex flex-col w-full h-full min-h-0 shadow-lg p-4">
-      <div className="flex-1 flex flex-col-reverse overflow-y-auto space-y-2 pb-2">
-        {[...messages].reverse().map((msg) => {
+    <div className="flex flex-col flex-1 min-h-0">
+      <div className="flex-1 min-h-0 overflow-y-auto px-2 pb-2 flex flex-col space-y-2">
+        <div className="flex-1" />
+        {[...messages].map((msg) => {
 
           const isSelf = msg.from === selfId;
           return (
@@ -57,9 +58,9 @@ export default function MessengerPanel({
         <div ref={scrollRef} />
       </div>
 
-      <div className="flex gap-2 pt-2">
+      <div className="flex gap-2 pt-2 m-2 mb-10">
         <input
-          className="flex-1 rounded px-2 py-1 text-black"
+          className="input"
           placeholder="Enter message..."
           value={input}
           onChange={(e) => setInput(e.target.value)}
@@ -71,7 +72,7 @@ export default function MessengerPanel({
           }}
         />
         <button
-          className="px-4 py-1 bg-blue-500 text-white rounded"
+          className="btn bg-active! text-accent!"
           onClick={() => {
             if (input.trim()) {
               onSend(input);

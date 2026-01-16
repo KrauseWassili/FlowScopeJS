@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { supabase } from "@/lib/auth/supabaseClient";
+import { sendTraceEvent } from "@/lib/trace/sendTraceEvent";
 
 export default function AuthPanel() {
+  console.log("AuthPanel rendered!");
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -11,12 +13,18 @@ export default function AuthPanel() {
   const [error, setError] = useState<string | null>(null);
 
   const signInGoogle = async () => {
+    let timeout: ReturnType<typeof setTimeout> | undefined;
     setBusy(true);
     setError(null);
+    const traceId = crypto.randomUUID();
+
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
     });
-    if (error) setError(error.message);
+
+    if (error) {
+      setError(error.message);
+    }
     setBusy(false);
   };
 
@@ -24,12 +32,29 @@ export default function AuthPanel() {
     setBusy(true);
     setError(null);
 
-    const { error } =
+    const traceId = crypto.randomUUID();
+
+    const { error, data } =
       mode === "login"
         ? await supabase.auth.signInWithPassword({ email, password })
         : await supabase.auth.signUp({ email, password });
 
-    if (error) setError(error.message);
+    if (error) {
+      sendTraceEvent({
+        traceId,
+        // type: mode === "login" ? "USER_LOGIN" : "USER_REGISTER",
+        type: mode === "login" ? "USER_LOGIN" : "USER_REGISTER",
+        node: "client_1",
+        actorId: "",
+        event: mode === "login" ? "login error" : "register error",
+        payload: { email: email },
+        error: { message: error.message },
+        outcome: "error",
+        timestamp: Date.now(),
+      });
+
+      setError(error.message);
+    } 
     setBusy(false);
   };
 
@@ -47,7 +72,7 @@ export default function AuthPanel() {
       </div>
 
       <button
-        className="rounded-md border px-3 py-2 text-sm disabled:opacity-50"
+        className="rounded-md border-border border px-3 py-2 text-sm disabled:opacity-50"
         disabled={busy}
         onClick={signInGoogle}
       >
@@ -57,7 +82,7 @@ export default function AuthPanel() {
       <div className="text-xs opacity-60">or</div>
 
       <input
-        className="rounded-md border px-3 py-2 text-sm"
+        className="rounded-md border-border border px-3 py-2 text-sm"
         placeholder="email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}

@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/auth/supabaseClient";
+import { sendTraceEvent } from "@/lib/trace/sendTraceEvent";
 
 function getInitials(email?: string, name?: string) {
   if (name) {
@@ -22,7 +23,7 @@ export default function UserStatus() {
   const { user, loading } = useAuth();
 
   if (loading) return null;
-  if (!user) return <div className="text-xs opacity-60">Not logged in</div>;
+  if (!user) return <div className="flex items-center h-10 text-title p-2">Not logged in</div>;
 
   const avatarUrl =
     user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
@@ -31,24 +32,29 @@ export default function UserStatus() {
   const initials = getInitials(user.email, name);
 
   return (
-    <div className="flex items-center gap-2 text-xs">
+    <div className="flex items-center gap-2 h-10">
       {/* Avatar */}
       {avatarUrl ? (
         <img
           src={avatarUrl}
           alt="avatar"
-          className="h-6 w-6 rounded-full object-cover"
+          className="h-8 w-8 rounded-full object-cover"
           referrerPolicy="no-referrer"
         />
       ) : (
-        <div className="h-6 w-6 rounded-full bg-gray-300 flex items-center justify-center text-[10px] font-semibold text-gray-700">
+        <div className="h-6 w-6 rounded-full bg-background flex items-center justify-center">
           {initials}
         </div>
       )}
 
       <span className="opacity-70">{name ?? user.email}</span>
-
-      <button className="underline" onClick={() => supabase.auth.signOut()}>
+      {/* Logout */}
+      <button
+        className="btn"
+        onClick={async () => {
+          await supabase.auth.signOut();
+        }}
+      >
         Logout
       </button>
     </div>

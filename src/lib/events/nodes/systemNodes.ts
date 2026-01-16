@@ -1,8 +1,8 @@
 export const SYSTEM_NODES = [
-  "client_emit",
+  "client_1",
   "ws",
   "redis",
-  "client_receive",
+  "client_2",
   "api",
   "db",
 ] as const;

@@ -17,7 +17,7 @@ export default function LoginForm() {
         value={email}
         onChange={e => setEmail(e.target.value)}
         required
-        className="border px-2 py-1 rounded"
+        className="border-border border px-2 py-1 rounded"
       />
       <input
         placeholder="Password"
@@ -25,7 +25,7 @@ export default function LoginForm() {
         value={pass}
         onChange={e => setPass(e.target.value)}
         required
-        className="border px-2 py-1 rounded"
+        className="border-border border px-2 py-1 rounded"
       />
       <button type="submit" className="bg-blue-500 text-white px-3 py-1 rounded">
         Login

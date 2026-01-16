@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/context/AuthContext";
 import { useSocket } from "@/context/SocketContext";
 import MessengerPanel from "./MessengerPanel";
 import AuthPanel from "./AuthPanel";
 import UserStatus from "./UserStatus";
 import { Profile } from "@/lib/auth/profile";
-import ContactSelect from "./ContactSelect";
+import PeerSelect from "./PeerSelect";
 import { sendTraceEvent } from "@/lib/trace/sendTraceEvent";
 
 type Message = {
@@ -39,10 +39,6 @@ export default function ClientArea() {
   const [peerId, setPeerId] = useState<string | undefined>();
   const [tab, setTab] = useState<"messenger" | "auth">("messenger");
   const [messages, setMessages] = useState<Message[]>([]);
-
-  /* =========================
-     Socket listeners
-  ========================= */
 
   useEffect(() => {
     if (!socket) return;
@@ -77,38 +73,47 @@ export default function ClientArea() {
     };
   }, [socket]);
 
-  /* =========================
-     Load contacts
-  ========================= */
+  const traceIdRef = useRef<string>("");
 
   useEffect(() => {
     if (!user) return;
+    const timeout = setTimeout(() => {
+      const traceId = crypto.randomUUID();
+      const type = "USER_SELECT";
 
-    fetch(`/api/peers?selfId=${user.id}`)
-      .then((res) => res.json())
-      .then(setUsers)
-      .catch(console.error);
+      // sendTraceEvent({
+      //   traceId,
+      //   type,
+      //   node: "client_1",
+      //   actorId: user.id,
+      //   outcome: "success",
+      //   timestamp: Date.now(),
+      // });
+
+      fetch(`/api/peers?selfId=${user.id}`, {
+        headers: {
+          "x-trace-id": traceId,
+        },
+      })
+        .then((res) => res.json())
+        .then(setUsers)
+        .catch(console.error);
+    }, 100);
+    return () => clearTimeout(timeout);
   }, [user]);
-
-  /* =========================
-     Send message
-  ========================= */
-
-  const TRACE_ID = "demo_trace";
 
   const handleSendMessage = (to: string, text: string) => {
     if (!socket || !user) return;
 
     const traceId = crypto.randomUUID();
-    const type = "MESSAGE_EXCHANGE";
+    const type = "MESSAGE";
 
     sendTraceEvent({
       traceId: traceId,
       type: type,
-      node: "client_emit",
+      node: "client_1",
       actorId: user.id,
       dialogId: `${user.id}:${to}`,
-      event: `Send message to ${to}`,
       payload: {
         text,
       },
@@ -140,19 +145,23 @@ export default function ClientArea() {
   );
 
   return (
-    <div className="flex-1 flex flex-col border-b min-h-0">
-      <div className="flex gap-2 border-b p-2 flex-shrink-0">
-        <button onClick={() => setTab("messenger")}>Messenger</button>
-        <button onClick={() => setTab("auth")}>Login / Registration</button>
+    <div className="flex-1 flex flex-col border-border border-b min-h-0">
+      <div className="flex gap-2 border-border border-b p-4 shrink-0 bg-panel">
+        <button onClick={() => setTab("messenger")} className="btn">
+          Messenger
+        </button>
+        <button onClick={() => setTab("auth")} className="btn">
+          Login
+        </button>
 
         {user && (
-          <ContactSelect users={users} value={peerId} onChange={setPeerId} />
+          <PeerSelect users={users} value={peerId} onChange={setPeerId} />
         )}
 
         <UserStatus />
       </div>
 
-      <div className="flex-1 min-h-0 flex flex-col">
+      <div className="flex-1 flex flex-col min-h-0 ">
         {tab === "messenger" &&
           (selfId && peerId ? (
             <MessengerPanel

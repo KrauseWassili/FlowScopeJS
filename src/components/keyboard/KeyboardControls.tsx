@@ -1,5 +1,5 @@
 import { PlaybackControls } from "@/lib/playback/playback.types";
-import { TraceEvent } from "@/server/lib/trace/sсhemas";
+import { TraceEvent } from "@/lib/trace/sсhemas";
 import { useEffect } from "react";
 
 type KeyboardControlsProps = {
@@ -8,7 +8,6 @@ type KeyboardControlsProps = {
   replaySpeed: number;
   activeEvent: TraceEvent | null;
   controls: PlaybackControls;
-  addMarker: (eventId: string) => void;
 };
 export default function KeyboardControls({
   mode,
@@ -16,7 +15,6 @@ export default function KeyboardControls({
   replaySpeed,
   activeEvent,
   controls,
-  addMarker,
 }: KeyboardControlsProps) {
   useEffect(() => {
     function handleKeyDown(e: KeyboardEvent) {
@@ -32,7 +30,7 @@ export default function KeyboardControls({
       switch (e.key) {
         case " ":
           e.preventDefault();
-          isPlaying ? controls.pause() : controls.play();
+          controls.play_pause();
           break;
 
         case "ArrowRight":
@@ -50,18 +48,11 @@ export default function KeyboardControls({
         case "ArrowDown":
           controls.setSpeed(Math.max(replaySpeed / 2, 0.25));
           break;
-
-        case "m":
-        case "M":
-          if (activeEvent) {
-            addMarker(activeEvent.traceId);
-          }
-          break;
       }
     }
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [mode, isPlaying, replaySpeed, activeEvent, controls, addMarker]);
+  }, [mode, isPlaying, replaySpeed, activeEvent, controls]);
 
   return null;
 }

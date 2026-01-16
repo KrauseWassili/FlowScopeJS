@@ -10,10 +10,16 @@ export function useReplay(events: TraceEvent[]) {
 
   const playedEvents = events.slice(0, index);
 
-  const activeEvent =
-    mode === "replay" && index > 0
-      ? events[index - 1]
-      : null;
+  const activeEvent = mode === "replay" && index > 0 ? events[index - 1] : null;
+
+  function jumpToTrace(traceId: string) {
+    console.log("jumpToTrace");
+    const targetIndex = events.findIndex((e) => e.traceId === traceId);
+    if (targetIndex !== -1) {
+      setIsPlaying(false);
+      setIndex(targetIndex + 1);
+    }
+  }
 
   useEffect(() => {
     if (mode !== "replay" || !isPlaying) return;
@@ -29,22 +35,15 @@ export function useReplay(events: TraceEvent[]) {
   }, [mode, isPlaying, speed, index, events.length]);
 
   const controls = {
-    play: () => setIsPlaying(true),
-    pause: () => setIsPlaying(false),
-
-    next: () =>
-      setIndex((i) => Math.min(i + 1, events.length)),
-
-    prev: () =>
-      setIndex((i) => Math.max(i - 1, 0)),
-
-    setSpeed,
-
     toggleMode: () => {
       setMode((m) => (m === "live" ? "replay" : "live"));
       setIsPlaying(false);
-      setIndex(0); 
+      setIndex(0);
     },
+    play_pause: () => (isPlaying ? setIsPlaying(false) : setIsPlaying(true)),
+    next: () => setIndex((i) => Math.min(i + 1, events.length)),
+    prev: () => setIndex((i) => Math.max(i - 1, 0)),
+    setSpeed,
   };
 
   return {
@@ -53,9 +52,10 @@ export function useReplay(events: TraceEvent[]) {
     speed,
     index,
 
-    playedEvents, 
-    activeEvent,  
+    playedEvents,
+    activeEvent,
 
     controls,
+    jumpToTrace,
   };
 }

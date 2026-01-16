@@ -1,35 +1,24 @@
-import { useMemo, useState } from "react";
-import EventTimeline from "./EventTimeline";
+import { useEffect, useState } from "react";
+import TraceTimeline from "./TraceTimeline";
 import { SystemMap } from "./SystemMap";
 import { PlaybackPanel } from "./PlaybackPanel";
-import { InlineEventInspector } from "./InlineEventInspector";
+import { EventInspector } from "./EventInspector";
 import { TraceEvent } from "@/lib/trace/sсhemas";
 import { useReplay } from "@/hooks/useReplay";
-import { Marker } from "@/lib/trace/markers/Markers";
+import KeyboardControls from "../keyboard/KeyboardControls";
 
 type ObservationAreaProps = {
   events: TraceEvent[];
-  markers: Marker[];
-  onJumpToEvent: (traceId: string) => void;
+  // markers: Marker[];
 };
 
-function findTraceEventForNode(
-  traceId: string,
-  node: string,
-  events: TraceEvent[]
-): TraceEvent | null {
-  const allForNode = events.filter(
-    (e) => e.traceId === traceId && e.node === node
-  );
-  return allForNode.length ? allForNode[allForNode.length - 1] : null;
-}
-
-export default function ObservationArea({
-  events,
-  markers,
-  onJumpToEvent,
-}: ObservationAreaProps) {
+export default function ObservationArea({ events }: ObservationAreaProps) {
   const replay = useReplay(events);
+
+  const [mode, setMode] = useState<"live" | "replay">("live");
+  const [replayIndex, setReplayIndex] = useState(0);
+  const [replaySpeed, setReplaySpeed] = useState(1);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   const currentTraceId =
     replay.mode === "replay"
@@ -48,50 +37,57 @@ export default function ObservationArea({
   } | null>(null);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       <PlaybackPanel
         mode={replay.mode}
         isPlaying={replay.isPlaying}
         replayIndex={replay.index}
+        speed={replay.speed}
         controls={replay.controls}
       />
-
-      <div className="h-1/2 overflow-auto border-b">
-        <SystemMap
-          mode={replay.mode}
-          events={eventsForCurrentTrace}
-          activeNode={
-            replay.mode === "replay"
-              ? replay.activeEvent?.node ?? null
-              : undefined
+      <SystemMap
+        mode={replay.mode}
+        events={eventsForCurrentTrace}
+        activeNode={
+          replay.mode === "replay"
+            ? replay.activeEvent?.node ?? null
+            : undefined
+        }
+        onNodeClick={({ traceId, node }) => {
+          const e = events
+            .filter((e) => e.traceId === traceId && e.node === node)
+            .at(-1);
+          if (e) {
+            setInspectedEvent({ event: e, node });
           }
-          onNodeClick={({ traceId, node }) => {
-            const e = events
-              .filter((e) => e.traceId === traceId && e.node === node)
-              .at(-1);
-            if (e) {
-              setInspectedEvent({ event: e, node });
-            }
-          }}
-        />
-      </div>
+        }}
+      />
+      <div className="flex-1 min-h-0 grid grid-cols-2">
+        <div className="flex flex-col min-h-0 min-w-0 border-border border-r ">
+          <TraceTimeline
+            events={events}
+            mode={replay.mode}
+            activeEvent={replay.activeEvent}
+            onJumpToTrace={replay.jumpToTrace}
+          />
+        </div>
 
-      {inspectedEvent && (
-        <InlineEventInspector
-          event={inspectedEvent.event}
-          node={inspectedEvent.node}
-          onClose={() => setInspectedEvent(null)}
-        />
-      )}
-      <div className="h-1/2 min-h-0 overflow-auto">
-        <EventTimeline
-          events={events}
-          mode={replay.mode}
-          activeEvent={replay.activeEvent}
-          markers={markers}
-          onJumpToEvent={onJumpToEvent}
-        />
+        <div className="flex flex-col min-w-0 min-h-0 border-border border-r">
+          {inspectedEvent && (
+            <EventInspector
+              event={inspectedEvent.event}
+              node={inspectedEvent.node}
+            />
+          )}
+        </div>
       </div>
+      {/* <KeyboardControls
+        mode={replay.mode}
+        isPlaying={replay.isPlaying}
+        replaySpeed={replay.speed}
+        activeEvent={replay.activeEvent}
+        controls={replay.controls}        
+      /> */}
     </div>
   );
 }

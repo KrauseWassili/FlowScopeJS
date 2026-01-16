@@ -9,10 +9,10 @@ import {
 
 
 export const SYSTEM_NODE_ICON: Record<EventNode, React.ElementType> = {
-  client_emit: Monitor,
+  client_1: Monitor,
   ws: RadioTower,
   api: Server,
   redis: HardDrive,
   db: Database,
-  client_receive: Monitor,
+  client_2: Monitor,
 };

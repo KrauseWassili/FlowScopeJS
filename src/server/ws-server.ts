@@ -18,13 +18,10 @@ console.log("ENV CHECK:", {
    Redis
 ========================= */
 
-// Явно приводим типы к string/number:
 const redisHost = (process.env.REDIS_HOST as string) || "localhost";
 const redisPort = +(process.env.REDIS_PORT || 6379);
 
-// 📨 для мессенджера
 const redisChat = new Redis(redisPort, redisHost);
-// 🔭 для observability (BLOCK 0)
 const redisObs = new Redis(redisPort, redisHost);
 
 /* =========================
@@ -75,8 +72,6 @@ function mapFields(fields: any[]): any {
   return obj;
 }
 
-
-
 async function startObservabilityConsumer() {
   await ensureGroup();
   console.log("🚀 Observability Redis consumer started");
@@ -102,9 +97,8 @@ async function startObservabilityConsumer() {
         for (const [id, fields] of events as any) {
           const event = mapFields(fields) as any;
 
-          console.log("[WS][OBS]", event.traceId, event.stage);
+          console.log("[WS][OBS] EMIT", event.type, event);
 
-          // fan-out всем браузерам
           io.emit("system:event", event);
 
           await redisObs.xack(STREAM, GROUP, id);
@@ -152,6 +146,26 @@ io.on("connection", (socket: any) => {
 
   socket.join(userId);
 
+  (async () => {
+    try {
+      const history = (
+        await redisObs.xrevrange("system-events", "+", "-", "COUNT", 20)
+      ).reverse();
+
+      const parsedEvents = history.map(([id, fields]: [string, string[]]) => {
+        const obj: any = {};
+        for (let i = 0; i < fields.length; i += 2) {
+          obj[fields[i]] = fields[i + 1];
+        }
+        return obj.event ? JSON.parse(obj.event) : obj;
+      });
+
+      socket.emit("system:history", parsedEvents);
+    } catch (err) {
+      console.error("Ошибка получения истории для клиента:", err);
+    }
+  })();
+
   socket.on(
     "message:send",
     async ({
@@ -165,9 +179,8 @@ io.on("connection", (socket: any) => {
     }) => {
       // Используем traceId/type
       const traceId = trace?.traceId || crypto.randomUUID();
-      const type = "MESSAGE_EXCHANGE";
+      const type = "MESSAGE";
       if (!to || !text) {
-        // 0️⃣ Ошибка: Не хватает данных
         await sendTraceEvent({
           traceId,
           type,
@@ -183,7 +196,6 @@ io.on("connection", (socket: any) => {
       }
 
       try {
-        // 1️⃣ Маячок: Сервер получил событие
         await sendTraceEvent({
           traceId,
           type,
@@ -199,7 +211,6 @@ io.on("connection", (socket: any) => {
 
         let id;
         try {
-          // 2️⃣ Сохраняем сообщение в Redis
           id = await redisChat.xadd(
             "messages",
             "*",
@@ -213,7 +224,6 @@ io.on("connection", (socket: any) => {
             timestamp
           );
 
-          // 3️⃣ Маячок: Сообщение записано в Redis
           await sendTraceEvent({
             traceId,
             type,
@@ -225,7 +235,6 @@ io.on("connection", (socket: any) => {
             payload: { text },
           });
         } catch (redisErr: any) {
-          // ❗ Ошибка при записи в Redis
           await sendTraceEvent({
             traceId,
             type,
@@ -239,21 +248,19 @@ io.on("connection", (socket: any) => {
               message: redisErr.message,
             },
           });
-          throw redisErr; // чтобы не идти дальше
+          throw redisErr;
         }
 
         const message = { id, from: userId, to, text, timestamp };
 
         try {
-          // 4️⃣ Рассылаем сообщение клиентам
           io.to(userId).emit("message:new", message);
           io.to(to).emit("message:new", message);
 
-          // 5️⃣ Маячок: Доставлено хотя бы одному клиенту
           await sendTraceEvent({
             traceId,
             type,
-            node: "client_receive",
+            node: "client_2",
             actorId: userId,
             dialogId: `${userId}:${to}`,
             outcome: "success",
@@ -261,7 +268,6 @@ io.on("connection", (socket: any) => {
             payload: { text },
           });
         } catch (emitErr: any) {
-          // ❗ Ошибка рассылки клиентам
           await sendTraceEvent({
             traceId,
             type,
@@ -277,7 +283,6 @@ io.on("connection", (socket: any) => {
           });
         }
       } catch (err: any) {
-        // ❗ Глобальная ошибка обработчика
         await sendTraceEvent({
           traceId,
           type,

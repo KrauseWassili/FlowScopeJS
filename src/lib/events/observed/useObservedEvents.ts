@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 import { TraceEvent } from "@/lib/trace/sсhemas";
 
 export function useObservedEvents(token: string | null) {
-  const [eventsByTrace, setEventsByTrace] = useState<Record<string, TraceEvent[]>>({});
+  const [events, setEvents] = useState<TraceEvent[]>([]);
 
   useEffect(() => {
     if (!token) return;
@@ -12,17 +12,25 @@ export function useObservedEvents(token: string | null) {
       auth: { token },
     });
 
+    // Получаем всю историю
+    socket.on("system:history", (history: TraceEvent[]) => {
+      console.log("Получена история (typeof):", typeof history);
+      console.log("Получена история (полностью):", history);
+      setEvents(history);
+    });
+
+    // Получаем новые события и добавляем, если их нет в массиве
     socket.on("system:event", (event: TraceEvent) => {
-      setEventsByTrace(prev => {
-        const arr = prev[event.traceId] ?? [];
-        const isDuplicate = arr.some(
-          (e) => e.node === event.node && e.timestamp === event.timestamp
+      setEvents((prev) => {
+        // Дубликаты по traceId + node + timestamp
+        const isDuplicate = prev.some(
+          (e) =>
+            e.traceId === event.traceId &&
+            e.node === event.node &&
+            e.timestamp === event.timestamp
         );
         if (isDuplicate) return prev;
-        return {
-          ...prev,
-          [event.traceId]: [...arr, event],
-        };
+        return [...prev, event];
       });
     });
 
@@ -31,5 +39,5 @@ export function useObservedEvents(token: string | null) {
     };
   }, [token]);
 
-  return Object.values(eventsByTrace).flat();
+  return events;
 }

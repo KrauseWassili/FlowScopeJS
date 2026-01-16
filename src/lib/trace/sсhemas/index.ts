@@ -2,7 +2,7 @@ import { z } from "zod";
 import { baseEventSchema } from "./baseEventSchema";
 
 export const messageExchangeSchema = baseEventSchema.extend({
-  type: z.literal("MESSAGE_EXCHANGE"),
+  type: z.literal("MESSAGE"),
   payload: z.object({
     text: z.string(),
   }),
@@ -12,14 +12,16 @@ export const userLoginSchema = baseEventSchema.extend({
   type: z.literal("USER_LOGIN"),
   payload: z.object({
     method: z.enum(["password", "oauth"]).optional(),
-  }),
+    email: z.string().email().optional(),
+  }).optional(),
 });
 
 export const userRegisterSchema = baseEventSchema.extend({
   type: z.literal("USER_REGISTER"),
   payload: z.object({
+    method: z.enum(["password", "oauth"]).optional(),
     email: z.string().email().optional(),
-  }),
+  }).optional(),
 });
 
 export const userLogoutSchema = baseEventSchema.extend({
@@ -27,11 +29,21 @@ export const userLogoutSchema = baseEventSchema.extend({
   payload: z.object({}).optional(),
 });
 
+export const userSelectSchema = baseEventSchema.extend({
+  type: z.literal("USER_SELECT"),
+  payload: z.object({
+    entity: z.literal("peers").optional(),
+    count: z.number().optional(),
+    text: z.string().optional(),
+  }).optional(),
+});
+
 export const eventSchemas = {
-  MESSAGE_EXCHANGE: messageExchangeSchema,
+  MESSAGE: messageExchangeSchema,
   USER_LOGIN: userLoginSchema,
   USER_REGISTER: userRegisterSchema,
   USER_LOGOUT: userLogoutSchema,
+  USER_SELECT: userSelectSchema,
 } as const;
 
 export type EventType = keyof typeof eventSchemas;
@@ -40,4 +52,5 @@ export type TraceEvent =
   | z.infer<typeof messageExchangeSchema>
   | z.infer<typeof userLoginSchema>
   | z.infer<typeof userRegisterSchema>
-  | z.infer<typeof userLogoutSchema>;
+  | z.infer<typeof userLogoutSchema>
+  | z.infer<typeof userSelectSchema>;

@@ -1,6 +1,7 @@
 import { SYSTEM_NODES, EventNode } from "@/lib/events/nodes/systemNodes";
 import { SystemEvent } from "./SystemEvent";
 import { TraceEvent } from "@/lib/trace/sсhemas";
+import { cn } from "@/lib/utils/cn";
 
 type Props = {
   mode: "live" | "replay";
@@ -17,9 +18,9 @@ export function SystemMap({ mode, events, activeNode, onNodeClick }: Props) {
   }
 
   return (
-    <div className="relative w-full py-8">
-      {/* НОДЫ */}
-      <div className="flex justify-between px-6">
+    <div className="relative w-full py-8 border-border border-b">
+      {/* NODES */}
+      <div className="flex justify-center gap-8 px-6">
         {SYSTEM_NODES.map((node) => {
           const participated =
             mode === "live" ? lastEventByNode.has(node) : activeNode === node;
@@ -48,14 +49,14 @@ export function SystemMap({ mode, events, activeNode, onNodeClick }: Props) {
                 }}
               />
               <div
-                className={[
-                  "w-1 h-6 mt-2 transition-colors",
+                className={cn(
+                  "w-1 h-6 rounded-t-md mt-2 transition-colors",
                   participated
                     ? outcome === "error"
-                      ? "bg-timeline-error"
-                      : "bg-timeline-success"
-                    : "bg-gray-300 opacity-30",
-                ].join(" ")}
+                      ? "bg-error"
+                      : "bg-success"
+                    : "bg-inactive"
+                )}
               />
             </div>
           );

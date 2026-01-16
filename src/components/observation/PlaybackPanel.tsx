@@ -1,14 +1,16 @@
+import { cn } from "@/lib/utils/cn";
+
 type Props = {
   mode: "live" | "replay";
   isPlaying: boolean;
   replayIndex: number;
+  speed: number;
   controls: {
-    play: () => void;
-    pause: () => void;
+    toggleMode: () => void;
+    play_pause: () => void;
     next: () => void;
     prev: () => void;
     setSpeed: (v: number) => void;
-    toggleMode: () => void;
   };
 };
 
@@ -16,25 +18,20 @@ export function PlaybackPanel({
   mode,
   isPlaying,
   replayIndex,
+  speed,
   controls,
 }: Props) {
   return (
-    <div className="p-2 border-b">
-      <div className="text-sm mb-2">
-        Mode: <b>{mode}</b> · Event #{replayIndex} ·{" "}
-        {isPlaying ? "Playing" : "Paused"}
-      </div>
+    <div className="p-4 border-border border-b bg-panel">
+      <div className="flex gap-2 justify-center">
+        <button onClick={controls.toggleMode} className="btn">{mode.toUpperCase()}</button>
+        <button onClick={controls.prev} disabled={mode === "live" } className="btn">⏮</button>
+        <button onClick={controls.play_pause} disabled={mode === "live"} className={cn("btn", isPlaying && "bg-active!")}>{isPlaying ? "⏸" : "▶"}</button>
+        <button onClick={controls.next} disabled={mode === "live"} className="btn">⏭</button>
 
-      <div className="flex gap-2 items-center">
-        <button onClick={controls.toggleMode}>Toggle mode</button>
-        <button onClick={controls.prev} disabled={mode === "live"}>⏮</button>
-        <button onClick={controls.pause} disabled={mode === "live"}>⏸</button>
-        <button onClick={controls.play} disabled={mode === "live"}>▶</button>
-        <button onClick={controls.next} disabled={mode === "live"}>⏭</button>
-
-        <button onClick={() => controls.setSpeed(0.5)}>0.5×</button>
-        <button onClick={() => controls.setSpeed(1)}>1×</button>
-        <button onClick={() => controls.setSpeed(2)}>2×</button>
+        <button onClick={() => controls.setSpeed(0.5)} className={cn("btn",speed === 0.5 && "bg-active!")}>0.5×</button>
+        <button onClick={() => controls.setSpeed(1)} className={cn("btn",speed === 1 && "bg-active!")}>1×</button>
+        <button onClick={() => controls.setSpeed(2)} className={cn("btn",speed === 2 && "bg-active!")}>2×</button>
       </div>
     </div>
   );
