@@ -34,6 +34,17 @@ export function useReplay(events: TraceEvent[]) {
     return () => clearTimeout(id);
   }, [mode, isPlaying, speed, index, events.length]);
 
+  useEffect(() => {
+    if (mode === "replay" && isPlaying && index >= events.length) {
+      setIsPlaying(false);
+    }
+  }, [index, events.length, mode, isPlaying]);
+
+  useEffect(() => {
+    setIsPlaying(false);
+    setIndex(0);
+  }, [events]);
+
   const controls = {
     toggleMode: () => {
       setMode((m) => (m === "live" ? "replay" : "live"));

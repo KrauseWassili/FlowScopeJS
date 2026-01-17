@@ -15,20 +15,6 @@ export async function loadPeers(selfId: string, traceId: string) {
       .from(profiles)
       .where(ne(profiles.id, selfId));
 
-    // sendTraceEvent({
-    //   traceId,
-    //   type: "USER_SELECT",
-    //   node: "db",
-    //   actorId: selfId,
-    //   event: "DB: Finish select peers",
-    //   payload: {
-    //     entity: "peers",
-    //     count: users.length,
-    //   },
-    //   outcome: "success",
-    //   timestamp: Date.now(),
-    // });
-
     return users;
   } catch (err) {
     sendTraceEvent({

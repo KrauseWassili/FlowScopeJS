@@ -4,7 +4,11 @@ import { useState } from "react";
 import { supabase } from "@/lib/auth/supabaseClient";
 import { sendTraceEvent } from "@/lib/trace/sendTraceEvent";
 
-export default function AuthPanel() {
+type AuthPanelProps = {
+  setTab: (tabName: "messenger" | "auth") => void;
+};
+
+export default function AuthPanel({ setTab }: AuthPanelProps) {
   console.log("AuthPanel rendered!");
   const [mode, setMode] = useState<"login" | "register">("login");
   const [email, setEmail] = useState("");
@@ -54,8 +58,11 @@ export default function AuthPanel() {
       });
 
       setError(error.message);
-    } 
+    }
     setBusy(false);
+    if (!error) {
+      setTab("messenger");
+    }
   };
 
   return (
@@ -72,7 +79,7 @@ export default function AuthPanel() {
       </div>
 
       <button
-        className="rounded-md border-border border px-3 py-2 text-sm disabled:opacity-50"
+        className="input bg-active! text-accent! font-semibold"
         disabled={busy}
         onClick={signInGoogle}
       >
@@ -81,29 +88,40 @@ export default function AuthPanel() {
 
       <div className="text-xs opacity-60">or</div>
 
-      <input
-        className="rounded-md border-border border px-3 py-2 text-sm"
-        placeholder="email"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        disabled={busy}
-      />
-      <input
-        className="rounded-md border px-3 py-2 text-sm"
-        placeholder="password"
-        type="password"
-        value={password}
-        onChange={(e) => setPassword(e.target.value)}
-        disabled={busy}
-      />
-
-      <button
-        className="rounded-md bg-black px-3 py-2 text-sm text-white disabled:opacity-50"
-        disabled={busy || !email || !password}
-        onClick={submit}
+      <form
+        className="flex flex-col gap-3"
+        onSubmit={(e) => {
+          e.preventDefault();
+          if (!busy && email && password) {
+            submit();
+          }
+        }}
       >
-        {mode === "login" ? "Login" : "Register"}
-      </button>
+        <input
+          className="input"
+          placeholder="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          disabled={busy}
+        />
+
+        <input
+          className="input"
+          placeholder="password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          disabled={busy}
+        />
+
+        <button
+          type="submit"
+          className="input bg-active! text-accent! font-semibold"
+          disabled={busy || !email || !password}
+        >
+          {mode === "login" ? "Login" : "Register"}
+        </button>
+      </form>
 
       {error && <div className="text-xs text-red-600">{error}</div>}
     </div>

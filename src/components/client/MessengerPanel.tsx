@@ -12,8 +12,9 @@ type Message = {
   from: string;
   to: string;
   text: string;
-  timestamp?: Date;
+  timestamp?: string;
 };
+
 
 export default function MessengerPanel({
   selfId,
@@ -48,7 +49,7 @@ export default function MessengerPanel({
                     isSelf ? "bg-blue-500 text-white" : "bg-gray-200 text-black"
                   }
                 `}
-                title={msg.timestamp?.toLocaleTimeString()}
+                title={msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString() : ""}
               >
                 <div className="text-sm">{msg.text}</div>
               </div>

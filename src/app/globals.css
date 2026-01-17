@@ -9,12 +9,14 @@
   --color-panel: #bad7f0;
   --color-success: #10b981;
   --color-error: #ef4444;
-  --color-active: #5895f1;
+  --color-active: #2597f5;
   --color-inactive: #f1f1f1;
   --color-inactive-opacity: 0.3;
   --color-title: #777a7e;
   --color-value: #252525;
   --color-border: #808080;
+  --color-marked: #ff7b00;
+  --color-attention: #ef4444;
 }
 
 @theme inline {
@@ -32,6 +34,8 @@
   --color-title: var(--color-title);
   --color-value: var(--color-value);
   --color-border: var(--color-border);
+  --color-marked: var(--color-marked);
+  --color-attention: var(--color-attention);
 
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
@@ -44,10 +48,17 @@
   text-shadow: -1px 1px 1px rgba(0, 0, 0, 0.05);
 }
 
-
-
 .link-btn {
-  @apply bg-transparent text-inactive hover:text-accent text-2xl hover:scale-110 transition-colors;
+  @apply h-10
+    flex items-center
+    bg-transparent
+    text-inactive
+    hover:text-accent
+    text-2xl
+    hover:scale-105
+    transition-colors
+    p-2;
+
   text-shadow: -1px 1px 1px rgba(0, 0, 0, 0.35);
 }
 
@@ -56,7 +67,6 @@
     bg-accent text-foreground active:scale-95;
   box-shadow: -1px 1px 1px 0 rgba(0, 0, 0, 0.35);
 }
-
 
 body {
   background: var(--color-background);

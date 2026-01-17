@@ -4,7 +4,7 @@ import { Profile } from "@/lib/auth/profile";
 
 type ContactSelectProps = {
   users: Profile[];
-  value?: string;
+  value?: string | null;
   onChange: (userId: string) => void;
 };
 
@@ -15,9 +15,12 @@ export default function PeerSelect({
 }: ContactSelectProps) {
   return (
     <select
-      className="btn w-40! bg-inactive!"
+      className="btn w-35! bg-inactive!"
       value={value ?? ""}
-      onChange={(e) => onChange(e.target.value)}
+      onChange={(e) => {
+        const v = e.target.value;
+        if (v) onChange(v);
+      }}
     >
       <option value="" disabled>
         Select peer
@@ -25,7 +28,7 @@ export default function PeerSelect({
 
       {users.map((u) => (
         <option key={u.id} value={u.id}>
-          {u.fullName ?? u.email}
+          {u.fullName ?? u.email?.split("@")[0]}
         </option>
       ))}
     </select>

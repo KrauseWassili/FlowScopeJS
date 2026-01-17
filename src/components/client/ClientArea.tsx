@@ -15,80 +15,81 @@ type Message = {
   from: string;
   to: string;
   text: string;
-  timestamp: Date;
+  timestamp?: string;
 };
-
-function parseRedisMsg(raw: any[]): Message {
-  const [id, arr] = raw;
-  const obj: any = {};
-  for (let i = 0; i < arr.length; i += 2) {
-    obj[arr[i]] = arr[i + 1];
-  }
-  return {
-    id,
-    ...obj,
-    timestamp: obj.timestamp ? new Date(obj.timestamp) : new Date(),
-  };
-}
 
 export default function ClientArea() {
   const { user, loading } = useAuth();
   const { socket } = useSocket();
 
   const [users, setUsers] = useState<Profile[]>([]);
-  const [peerId, setPeerId] = useState<string | undefined>();
   const [tab, setTab] = useState<"messenger" | "auth">("messenger");
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [peerId, setPeerId] = useState<string | null>(null);
+  const [messagesByPeer, setMessagesByPeer] = useState<
+    Record<string, Message[]>
+  >({});
 
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !user) return;
 
-    const onConnect = () => {
-      socket.emit("get_history");
-    };
+    const onNewMessage = (msg: Message) => {
+      const peer = msg.from === user.id ? msg.to : msg.from;
 
-    if (socket.connected) {
-      onConnect();
-    } else {
-      socket.once("connect", onConnect);
-    }
-
-    const onNewMessage = (msg: any) => {
-      setMessages((prev) => [
+      setMessagesByPeer((prev) => ({
         ...prev,
-        { ...msg, timestamp: new Date(msg.timestamp) },
-      ]);
+        [peer]: [...(prev[peer] ?? []), msg],
+      }));
     };
 
-    const onHistory = (rawMsgs: any[]) => {
-      setMessages(rawMsgs.map(parseRedisMsg));
+    const onDialogHistory = ({
+      peerId,
+      messages,
+    }: {
+      peerId: string;
+      messages: Message[];
+    }) => {
+      setMessagesByPeer((prev) => ({
+        ...prev,
+        [peerId]: messages,
+      }));
+    };
+
+    const onDialogCleared = ({ peerId }: { peerId: string }) => {
+      setMessagesByPeer((prev) => ({
+        ...prev,
+        [peerId]: [],
+      }));
     };
 
     socket.on("message:new", onNewMessage);
-    socket.on("message_history", onHistory);
+    socket.on("dialog:history", onDialogHistory);
+    socket.on("dialog:cleared", onDialogCleared);
 
     return () => {
       socket.off("message:new", onNewMessage);
-      socket.off("message_history", onHistory);
+      socket.off("dialog:history", onDialogHistory);
+      socket.off("dialog:cleared", onDialogCleared);
     };
-  }, [socket]);
+  }, [socket, user]);
 
-  const traceIdRef = useRef<string>("");
+  useEffect(() => {
+    if (socket && peerId) {
+      socket.emit("dialog:open", { peerId });
+    }
+  }, [socket, peerId]);
+
+  useEffect(() => {
+    if (!user) {
+      setPeerId(null);
+      setMessagesByPeer({});
+    }
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;
     const timeout = setTimeout(() => {
       const traceId = crypto.randomUUID();
       const type = "USER_SELECT";
-
-      // sendTraceEvent({
-      //   traceId,
-      //   type,
-      //   node: "client_1",
-      //   actorId: user.id,
-      //   outcome: "success",
-      //   timestamp: Date.now(),
-      // });
 
       fetch(`/api/peers?selfId=${user.id}`, {
         headers: {
@@ -118,7 +119,6 @@ export default function ClientArea() {
         text,
       },
       outcome: "success",
-      // outcome: "error",
       timestamp: Date.now(),
     });
 
@@ -138,27 +138,38 @@ export default function ClientArea() {
 
   const selfId = user?.id;
 
-  const visibleMessages = messages.filter(
-    (m) =>
-      (m.from === selfId && m.to === peerId) ||
-      (m.from === peerId && m.to === selfId)
-  );
+  const visibleMessages = peerId ? messagesByPeer[peerId] ?? [] : [];
 
   return (
-    <div className="flex-1 flex flex-col border-border border-b min-h-0">
+    <div className="flex-1 flex flex-col min-h-0">
       <div className="flex gap-2 border-border border-b p-4 shrink-0 bg-panel">
         <button onClick={() => setTab("messenger")} className="btn">
           Messenger
         </button>
-        <button onClick={() => setTab("auth")} className="btn">
-          Login
-        </button>
 
         {user && (
-          <PeerSelect users={users} value={peerId} onChange={setPeerId} />
+          <PeerSelect
+            users={users}
+            value={peerId}
+            onChange={(id) => {
+              setPeerId(id);
+              socket?.emit("dialog:open", { peerId: id });
+            }}
+          />
         )}
-
-        <UserStatus />
+        <UserStatus onSetTab={() => setTab("auth")} />
+        {peerId && (
+          <button
+            className="btn border-attention!"
+            onClick={() => {
+              if (peerId && confirm("Clear this chat?")) {
+                socket?.emit("dialog:clear", { peerId });
+              }
+            }}
+          >
+            Clear chat
+          </button>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col min-h-0 ">
@@ -178,7 +189,7 @@ export default function ClientArea() {
             </div>
           ))}
 
-        {tab === "auth" && <AuthPanel />}
+        {tab === "auth" && <AuthPanel setTab = {setTab}/>}
       </div>
     </div>
   );

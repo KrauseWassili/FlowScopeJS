@@ -4,6 +4,10 @@ import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/auth/supabaseClient";
 import { sendTraceEvent } from "@/lib/trace/sendTraceEvent";
 
+type UserStatusProps = {
+  onSetTab: () => void;
+};
+
 function getInitials(email?: string, name?: string) {
   if (name) {
     return name
@@ -19,11 +23,19 @@ function getInitials(email?: string, name?: string) {
   return "?";
 }
 
-export default function UserStatus() {
+export default function UserStatus({ onSetTab }: UserStatusProps) {
   const { user, loading } = useAuth();
 
   if (loading) return null;
-  if (!user) return <div className="flex items-center h-10 text-title p-2">Not logged in</div>;
+  if (!user)
+    return (
+      <div className="flex items-center h-10 text-title">
+        <button className="btn" onClick={onSetTab}>
+          Login
+        </button>
+        <div className="p-2">Not logged in</div>
+      </div>
+    );
 
   const avatarUrl =
     user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
@@ -32,23 +44,9 @@ export default function UserStatus() {
   const initials = getInitials(user.email, name);
 
   return (
-    <div className="flex items-center gap-2 h-10">
-      {/* Avatar */}
-      {avatarUrl ? (
-        <img
-          src={avatarUrl}
-          alt="avatar"
-          className="h-8 w-8 rounded-full object-cover"
-          referrerPolicy="no-referrer"
-        />
-      ) : (
-        <div className="h-6 w-6 rounded-full bg-background flex items-center justify-center">
-          {initials}
-        </div>
-      )}
-
-      <span className="opacity-70">{name ?? user.email}</span>
+    <div className="flex items-center gap-2 h-10 pl-2">
       {/* Logout */}
+
       <button
         className="btn"
         onClick={async () => {
@@ -57,6 +55,33 @@ export default function UserStatus() {
       >
         Logout
       </button>
+
+      {/* Avatar */}
+      {avatarUrl ? (
+        <img
+          src={avatarUrl}
+          alt="avatar"
+          style={{
+            filter: "drop-shadow(-1px 1px 1px rgba(0,0,0,0.55))",
+          }}
+          className="h-10 w-10 border-active border rounded-full object-cover"
+          referrerPolicy="no-referrer"
+        />
+      ) : (
+        <div
+          style={{ boxShadow: "-1px 1px 1px 0 rgba(0,0,0,0.15)" }}
+          className="h-10 w-10 border-active border rounded-full bg-background flex items-center justify-center"
+        >
+          {initials}
+        </div>
+      )}
+
+      <span
+        style={{ textShadow: "-1px 1px 1px rgba(0,0,0,0.15)" }}
+        className="h-10 w-10 flex items-center opacity-70 break-all w-35"
+      >
+        {name ?? user.email?.split("@")[0]}
+      </span>
     </div>
   );
 }

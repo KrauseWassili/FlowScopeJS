@@ -49,13 +49,14 @@ export function SystemMap({ mode, events, activeNode, onNodeClick }: Props) {
                 }}
               />
               <div
+                style={{ boxShadow: "-1px 1px 1px 0 rgba(0,0,0,0.65)" }}
                 className={cn(
                   "w-1 h-6 rounded-t-md mt-2 transition-colors",
                   participated
                     ? outcome === "error"
                       ? "bg-error"
                       : "bg-success"
-                    : "bg-inactive"
+                    : "bg-gray-300"
                 )}
               />
             </div>
@@ -64,7 +65,9 @@ export function SystemMap({ mode, events, activeNode, onNodeClick }: Props) {
       </div>
 
       <div className="relative mt-0">
-        <div className="h-1 rounded mx-4 bg-gray-300" />
+        <div 
+        style={{ boxShadow: "-1px 1px 1px 0 rgba(0,0,0,0.65)" }}
+        className="h-2 rounded mx-4 bg-gray-300" />
       </div>
     </div>
   );

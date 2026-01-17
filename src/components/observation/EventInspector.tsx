@@ -4,8 +4,8 @@ import { formatTimeMs } from "@/lib/utils/formatTimeMs";
 import { baseEventSchema } from "@/lib/trace/sсhemas/baseEventSchema";
 
 type Props = {
-  event: TraceEvent;
-  node: string;
+  event: TraceEvent | null;
+  node: string | null;
 };
 
 function renderValue(key: string, value: unknown) {
@@ -25,26 +25,39 @@ function renderValue(key: string, value: unknown) {
 
 export function EventInspector({ event }: Props) {
   const exclude = ["event", "meta"];
-  const keys = Object.keys(event).filter((k) => !exclude.includes(k));
+  const keys = event
+    ? Object.keys(event).filter((k) => !exclude.includes(k))
+    : [];
 
   return (
-    <div className="text-sm min-w-60 max-w-full">
-      <div className="p-3 space-y-2 border-border  border-b">
-        <div className="grid grid-cols-[120px_1fr] gap-2 font-semibold">
-          <div className="text-title  text-right pr-2">{event.type}</div>
-          <div className="text-value">@{event.node}</div>
+    <div className="text-sm min-w-60 max-w-full h-full flex flex-col">
+      {/* HEADER — всегда */}
+      <div className="flex justify-center px-2 text-sm font-semibold p-3 border-b border-border shrink-0 bg-panel">
+        EVENT INSPECTOR
+      </div>
+
+      {/* BODY */}
+      {!event ? (
+        <div className="flex-1 flex items-center justify-center text-xs opacity-50">
+          Select an event to inspect
         </div>
-      </div>
-      <div className="p-3 space-y-2">
-        {keys.map((key) => (
-          <div key={key} className="grid grid-cols-[120px_1fr] gap-2">
-            <div className="text-title  text-right pr-2">{key}</div>
-            <div className="text-value">
-              {renderValue(key, (event as any)[key])}
-            </div>
+      ) : (
+        <div className="flex-1 overflow-auto p-3 space-y-2">
+          <div className="grid grid-cols-[120px_1fr] gap-2 font-semibold">
+            <div className="text-title text-right pr-2">{event.type}</div>
+            <div className="text-value">@{event.node}</div>
           </div>
-        ))}
-      </div>
+
+          {keys.map((key) => (
+            <div key={key} className="grid grid-cols-[120px_1fr] gap-2">
+              <div className="text-title text-right pr-2">{key}</div>
+              <div className="text-value">
+                {renderValue(key, (event as any)[key])}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

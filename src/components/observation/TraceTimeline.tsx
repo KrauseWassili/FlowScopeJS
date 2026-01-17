@@ -42,7 +42,6 @@ function PipelineRail({
   activeNode?: string | null;
 }) {
   const nodeState = getLampStates(events);
-  const traceId = events[0]?.traceId;
 
   return (
     <div className="flex items-end gap-6 min-h-14">
@@ -65,11 +64,13 @@ function PipelineRail({
             </span>
 
             <span
-              style={{ boxShadow: "-2px 2px 1px 0 rgba(0,0,0,0.45)" }}
               className={cn(
                 "w-4 h-4 rounded-full transition-all",
                 colorClass,
-                isActiveLamp && "ring-2 ring-accent scale-110"
+                "shadow-[-2px_2px_1px_rgba(0,0,0,0.45)]",
+                isActiveLamp &&
+                  "ring-2 ring-marked scale-110 " +
+                    "shadow-[0_0_0_2px_rgba(255,0,0,1),0_2px_4px_rgba(0,0,0,0.4)]"
               )}
             />
 
@@ -94,6 +95,9 @@ export default function TraceTimeline({
 }: TraceTimelineProps) {
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  console.log("TIMELINE RENDER events ref", events);
+  console.log("TIMELINE RENDER events length", events.length);
+
   useEffect(() => {
     if (mode !== "live") return;
 
@@ -102,10 +106,6 @@ export default function TraceTimeline({
       block: "end",
     });
   }, [events.length, mode]);
-
-  if (events.length === 0) {
-    return <div className="p-4 text-inactive text-center">No events</div>;
-  }
 
   const eventsByTrace = events.reduce<Record<string, TraceEvent[]>>(
     (acc, e) => {
@@ -118,48 +118,53 @@ export default function TraceTimeline({
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div className="flex justify-center px-2 text-sm font-semibold p-3 border-b border-border shrink-0">
+      <div className="flex justify-center px-2 text-sm font-semibold p-3 border-b border-border shrink-0 bg-panel">
         TRACE TIMELINE
       </div>
+      {events.length === 0 ? (
+        <div className="flex-1 flex items-center justify-center text-xs opacity-50">
+          No events
+        </div>
+      ) : (
+        <div className="flex-1 min-h-0 min-w-0 overflow-auto">
+          <ul className="divide-y divide-border">
+            {Object.entries(eventsByTrace).map(([traceId, traceEvents]) => {
+              const isActiveRow =
+                mode === "replay" && activeEvent?.traceId === traceId;
 
-      <div className="flex-1 min-h-0 min-w-0 overflow-auto">
-        <ul className="divide-y divide-border">
-          {Object.entries(eventsByTrace).map(([traceId, traceEvents]) => {
-            const isActiveRow =
-              mode === "replay" && activeEvent?.traceId === traceId;
+              const activeNode = isActiveRow ? activeEvent?.node ?? null : null;
 
-            const activeNode = isActiveRow ? activeEvent?.node ?? null : null;
+              return (
+                <li
+                  key={traceId}
+                  className={cn(
+                    "px-2 py-2 transition-colors min-w-0",
+                    mode === "replay" && "cursor-pointer hover:bg-amber-100",
+                    isActiveRow && "bg-amber-200"
+                  )}
+                  onClick={() => {
+                    if (mode === "replay") {
+                      onJumpToTrace(traceId);
+                    }
+                  }}
+                >
+                  <div className="flex items-center gap-3 mb-1">
+                    <span className="font-mono text-xs text-title">
+                      {traceId}
+                    </span>
+                    <span className="text-xs font-semibold text-value">
+                      {traceEvents[0]?.type}
+                    </span>
+                  </div>
 
-            return (
-              <li
-                key={traceId}
-                className={cn(
-                  "px-2 py-2 transition-colors min-w-0",
-                  mode === "replay" && "cursor-pointer hover:bg-amber-100",
-                  isActiveRow && "bg-amber-200"
-                )}
-                onClick={() => {
-                  if (mode === "replay") {
-                    onJumpToTrace(traceId);
-                  }
-                }}
-              >
-                <div className="flex items-center gap-3 mb-1">
-                  <span className="font-mono text-xs text-title">
-                    {traceId}
-                  </span>
-                  <span className="text-xs font-semibold text-value">
-                    {traceEvents[0]?.type}
-                  </span>
-                </div>
-
-                <PipelineRail events={traceEvents} activeNode={activeNode} />
-              </li>
-            );
-          })}
-          <div className="h-10" ref={bottomRef} />
-        </ul>
-      </div>
+                  <PipelineRail events={traceEvents} activeNode={activeNode} />
+                </li>
+              );
+            })}
+            <div className="h-8" ref={bottomRef} />
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

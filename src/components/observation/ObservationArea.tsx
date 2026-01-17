@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import TraceTimeline from "./TraceTimeline";
 import { SystemMap } from "./SystemMap";
 import { PlaybackPanel } from "./PlaybackPanel";
@@ -9,16 +9,11 @@ import KeyboardControls from "../keyboard/KeyboardControls";
 
 type ObservationAreaProps = {
   events: TraceEvent[];
-  // markers: Marker[];
+  onClearEvents: () => void;
 };
 
-export default function ObservationArea({ events }: ObservationAreaProps) {
+export default function ObservationArea({ events, onClearEvents }: ObservationAreaProps) {
   const replay = useReplay(events);
-
-  const [mode, setMode] = useState<"live" | "replay">("live");
-  const [replayIndex, setReplayIndex] = useState(0);
-  const [replaySpeed, setReplaySpeed] = useState(1);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   const currentTraceId =
     replay.mode === "replay"
@@ -44,6 +39,7 @@ export default function ObservationArea({ events }: ObservationAreaProps) {
         replayIndex={replay.index}
         speed={replay.speed}
         controls={replay.controls}
+        clearEvents={onClearEvents}
       />
       <SystemMap
         mode={replay.mode}
@@ -73,21 +69,19 @@ export default function ObservationArea({ events }: ObservationAreaProps) {
         </div>
 
         <div className="flex flex-col min-w-0 min-h-0 border-border border-r">
-          {inspectedEvent && (
-            <EventInspector
-              event={inspectedEvent.event}
-              node={inspectedEvent.node}
-            />
-          )}
+          <EventInspector
+            event={inspectedEvent?.event ?? null}
+            node={inspectedEvent?.node ?? null}
+          />
         </div>
       </div>
-      {/* <KeyboardControls
+      <KeyboardControls
         mode={replay.mode}
         isPlaying={replay.isPlaying}
         replaySpeed={replay.speed}
         activeEvent={replay.activeEvent}
-        controls={replay.controls}        
-      /> */}
+        controls={replay.controls}
+      />
     </div>
   );
 }
